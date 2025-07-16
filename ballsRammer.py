@@ -13,10 +13,217 @@ import DetectBalls_w_color as detect
 from ultrasonic import Ultrasonic
 import RPi.GPIO as GPIO
 
+def forward(PWM, duration):
 
+    PWM.set_motor_model(650,650,650,650)
+    time.sleep(duration)
+    PWM.set_motor_model(0, 0, 0, 0)
+    currentPWMValue = [0, 0, 0, 0]
+   
+# drives the car fast as to ram an object
 
+def ram(PWM):
 
+    PWM.set_motor_model(3000,3000,3000,3000)
+    currentPWMValue = [3000, 3000, 3000, 3000]
 
+# turns the car right
+
+def turnRight(PWM, duration):
+
+    PWM.set_motor_model(2000,2000,-2000,-2000)
+    time.sleep(duration)
+    PWM.set_motor_model(0,0,0,0)
+
+# turns the car left
+
+def turnLeft(PWM, duration):
+
+    PWM.set_motor_model(-2000,-2000,2000,2000)
+    time.sleep(duration)
+    PWM.set_motor_model(0,0,0,0)
+
+def picture(PWM,camera,ballTargets):
+
+    print("Taking picture-\n")
+    PWM.set_motor_model(0,0,0,0)
+    time.sleep(0.5)
+    camera.save_image(filename="/home/circlekenjoyers/Freenove_4WD_Smart_Car_Kit_for_Raspberry_pi/Code/Server/image.jpg")
+    img = cv2.imread('/home/circlekenjoyers/Freenove_4WD_Smart_Car_Kit_for_Raspberry_pi/Code/Server/image.jpg')  
+    ballFound, hue_value, xCenter, yCenter = detect.find_ball(img, ballTargets[0])  
+    PWM.set_motor_model(currentPWMValue[0],currentPWMValue[1],currentPWMValue[2],currentPWMValue[3])
+    return ballFound, hue_value, xCenter, yCenter
+
+def transcendance(hue_value):
+
+    ballColor = None
+
+    if 121 <= hue_value <= 185:
+
+        ballColor = "red"
+
+    elif 90 <= hue_value <= 120:
+
+        ballColor = "blue"
+
+    elif 61 <= hue_value <= 89:
+
+        ballColor = "green"
+
+    elif 20 <= hue_value <= 60:
+
+        ballColor = "yellow"
+   
+    return ballColor
+
+def eliminate(ballTargets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
+
+    elseCounter = 0
+    ballFound = None
+    hue_value = None
+    ramVal = False
+    startTime = time.time()
+
+    print(f"First while loop check in eliminate: {ballColor} == {ballTargets[0]}")
+    # input("Waiting for input")
+    while ballColor == ballTargets[0]:
+
+        infra_check = IF.read_all_infrared()
+
+        if infra_check > 0:
+
+            PWM.set_motor_model(-1500,-1500,-1500,-1500)
+            time.sleep(1)
+            PWM.set_motor_model(0,0,0,0)
+            del ballTargets[0]
+            print(ballTargets)
+            print(ballColor)
+            return
+       
+        if ramVal == False:
+
+            if 1 <= xCenter <= 80:
+                print("Left quadrant.")
+                turnLeft(PWM, 0.125)
+                ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+
+            elif xCenter <= 175:
+                print("Middle left quadrant")
+                turnLeft(PWM, 0.0725)
+                ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+           
+            elif xCenter <= 230:
+               
+                if 0 < yCenter <= 212:
+
+                    forward(PWM, 0.7)
+                    ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+                    continue  
+
+                elif yCenter <= 300:
+
+                    # input("Ramming")
+                    ram(PWM)
+                    ramVal = True
+                    continue
+           
+            elif xCenter <= 320:
+                print("Right middle quadrant")
+                turnRight(PWM, 0.0725)
+                ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+           
+            elif xCenter <= 400:
+                print("Far right quadrant")
+                turnRight(PWM, 0.125)
+                ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+           
+            else:
+                elseCounter += 1
+                print("Ball not in frame")
+                turnLeft(PWM, 0.125)
+                ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+          
+            if elseCounter == 3:
+                return
+            # if not(round(time.time() - startTime) % 3):
+
+            #     ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+
+        print(f"In while loop check eliminate: {ballColor} == {ballTargets[0]}")
+
+def illuminate(ballTargets, ballColor, light, fate):
+
+    ledIndex = [2,3,4,8,16,32,64,128]
+    ledLeft = [2, 4, 16, 64]
+    ledRight = [3, 8, 32, 128]
+
+    if fate == "hunt":
+
+        if ballColor == "red":
+            for i in ledRight:
+                light.ledIndex(i, 255,0,0)
+
+        elif ballColor == "blue":
+
+            for i in ledRight:
+                light.ledIndex(i,0,0,255)
+
+        elif ballColor == "green":
+
+            for i in ledRight:
+                light.ledIndex(i,0,255,0)
+
+        elif ballColor == "yellow":
+
+            for i in ledRight:
+                light.ledIndex(i,255,255,0)
+    
+        else:
+
+            pass
+        
+    elif fate == "search":
+
+        if ballTargets[0] == "red":
+            for i in ledLeft:
+                light.ledIndex(i, 255,0,0)
+
+        elif ballTargets[0] == "blue":
+
+            for i in ledLeft:
+                light.ledIndex(i,0,0,255)
+
+        elif ballTargets[0] == "green":
+
+            for i in ledLeft:
+                light.ledIndex(i,0,255,0)
+
+        elif ballTargets[0] == "yellow":
+
+            for i in ledLeft:
+                light.ledIndex(i,255,255,0)
+            
+    elif fate == "search" or fate == "hunt":
+
+        if ballTargets[0] == "red" and ballColor == "red":
+
+            for i in ledIndex:
+                light.ledIndex(i, 255, 0, 0)
+        
+        elif ballTargets[0] == "blue" and ballColor == "blue":
+
+            for i in ledIndex:
+                light.ledIndex(i, 0, 0, 255)
+        
+        elif ballTargets[0] == "green" and ballColor == "green":
+
+            for i in ledIndex:
+                light.ledIndex(i, 0, 255, 0)
+            
+        elif ballTargets[0] == "yellow" and ballColor == "yellow":
+
+            for i in ledIndex:
+                light.ledIndex(255, 255, 0)
 
 if __name__=='__main__':
     startTime = time.time()
@@ -34,313 +241,59 @@ if __name__=='__main__':
     notBackAndForth = 0
     currentPWMValue = [0,0,0,0]
     buzzerPin = 17
+    ballTargets = []
+    colorOptions = ["red","blue","green","yellow"]
     GPIO.setup(buzzerPin, GPIO.OUT, initial=0)
-   
+    xMax = 400
+    yMax = 300
    
     with Ultrasonic() as ultrasonic:
 
-
        # while loop that runs to constantly check for the ball, obstacles, and boundaries
 
-
         try:
-            while True:
-                # initializes the camera feed and establishes objects for line detection
-                camera.save_image(filename="/home/circlekenjoyers/Freenove_4WD_Smart_Car_Kit_for_Raspberry_pi/Code/Server/image.jpg")
-                distance = ultrasonic.get_distance()
-                infra_check = IF.read_all_infrared()
-                infra_left = IF.read_one_infrared(1)
-                infra_mid = IF.read_one_infrared(2)
-                infra_right = IF.read_one_infrared(3)
 
+            for i in range(4):
 
-                # checks to see if a ball is detected, and if it is, checks the color then flashes the LEDs & stops for 5 secs
+                ballMark = input(f"Target color {i+1}: ")
 
+                if ballMark.lower() not in colorOptions:
 
+                    while ballMark.lower() not in colorOptions:
 
+                        print("Incorrect input - Retry\n")
+                        ballMark = input(f"Target color {i+1}: ")
 
-                # If no ball is detected, it runs the course while checking for objects closer than 30cm and detecting boundaries
+                print(ballMark)
+                ballTargets.append(ballMark)
 
+            print(ballTargets)
+            ballColor = None
 
-                if distance > 18:
+            turnRight(PWM, 1)
+            ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+            ballColor = transcendance(hue_value)
+           
+            # input("Done taking picture")
 
+            while len(ballTargets):
 
-                    # if no object is within 30cm & there are no boundaries, it drives straight. Otherwise, it adjusts course
+                if ballColor == ballTargets[0]:
 
-
-                    if infra_check == 0:
-
-
-                        PWM.set_motor_model(0,0,0,0)
-                        currentPWMValue = [0,0,0,0]
-                       
-                    elif infra_check == 7:
-
-
-                        choice = random.randint(0,1)
-                        PWM.set_motor_model(-1500,-1500,-1500,-1500)
-                        currentPWMValue = [-1500,-1500,-1500,-1500]
-                        time.sleep(.5)
-
-
-                        if choice:
-
-
-                            #Turn Right
-                            PWM.set_motor_model(1500,1500,-1500,-1500)
-                            currentPWMValue = [1500,1500,-1500,-1500]
-                            time.sleep(.3)
-
-
-                        else:
-
-
-                            #Turn Left
-                            PWM.set_motor_model(-1500,-1500,1500,1500)
-                            currentPWMValue = [-1500,-1500,1500,1500]
-                            time.sleep(.3)
-
-
-                    if infra_left == 0  and infra_mid == 1 and infra_right == 1:
-
-
-                        PWM.set_motor_model(-1500,-1500,-1500,-1500)
-                        time.sleep(0.3)
-                        PWM.set_motor_model(1500,1500,-1500,-1500)
-                        time.sleep(.5)
-                        PWM.set_motor_model(650,650,650,650)
-                        currentPWMValue = [650,650, 650,650]
-                        lastIRValues = [0,1,1]
-
-
-                    elif infra_left == 1  and infra_mid == 1 and infra_right == 0:
-
-
-                        PWM.set_motor_model(-1500,-1500,-1500,-1500)
-                        time.sleep(0.3)
-                        PWM.set_motor_model(1500,1500,-1500,-1500)
-                        time.sleep(.5)
-                        PWM.set_motor_model(650,650, 650,650)
-                        currentPWMValue = [650,650,650,650]
-                        lastIRValues = [1,1,0]
-                   
-                    # elif infra_left == 0  and infra_mid == 1 and infra_right == 0:
-
-
-                    #     PWM.set_motor_model(-625,-625,-625,-625)
-                   
-                    elif infra_left == 0 and infra_mid == 0 and infra_right == 1:
-
-
-                        if lastIRValues[0] == 1 and lastIRValues[1] == 0 and lastIRValues[2] == 0:
-
-
-                            backAndForth += 1
-
-
-                        else:
-
-
-                            notBackAndForth += 1
-
-
-                            PWM.set_motor_model(0,0,0,0)
-                            #input("Waiting to continue:")
-                            PWM.set_motor_model(650,650,650,650)
-
-
-
-
-                        if notBackAndForth > 0:
-
-
-                            backAndForth = 0
-                            notBackAndForth = 0
-
-
-
-
-                        if backAndForth  == 2:
-
-
-                            PWM.set_motor_model(-1500, -1500, -1500, -1500)
-                            time.sleep(0.3)
-                            PWM.set_motor_model(-2000,-2000, 2000, 2000)
-                            time.sleep(0.8)
-                            backAndForth = 0
-
-
-
-
-
-
-                        else:
-
-
-                            PWM.set_motor_model(-1500,-1500,-1500,-1500)
-                            time.sleep(0.3)
-                            PWM.set_motor_model(-1500,-1500,1500,1500)
-                            time.sleep(.5)
-
-
-
-
-                        PWM.set_motor_model(650, 650, 650,650)
-                        currentPWMValue = [650,650,650,650]
-                        lastIRValues = [0,0,1]
-                   
-                    elif infra_left == 1 and infra_mid == 0 and infra_right == 0:
-
-
-                        if lastIRValues[0] == 0 and lastIRValues[1] == 0 and lastIRValues[2] == 1:
-
-
-                            backAndForth += 1
-
-
-                        else:
-
-
-                            notBackAndForth += 1
-                            PWM.set_motor_model(0,0,0,0)
-                            #input("Waiting to continue:")
-                            PWM.set_motor_model(650,650,650,650)
-                       
-                        if notBackAndForth > 0:
-
-
-                            backAndForth = 0
-                            notBackAndForth = 0
-
-
-
-
-                        if backAndForth == 2:
-
-
-                            PWM.set_motor_model(-1500,-1500,-1500,-1500)
-                            time.sleep(0.3)
-                            PWM.set_motor_model(2000,2000,-2000,-2000)
-                            time.sleep(0.8)
-                            backAndForth = 0
-
-
-
-
-                        else:
-                            PWM.set_motor_model(-1500,-1500,-1500,-1500)
-                            time.sleep(0.3)
-                            PWM.set_motor_model(1500,1500,-1500,-1500)
-                            time.sleep(.5)
-                       
-                        PWM.set_motor_model(650,650,650,650)
-                        currentPWMValue = [650,650,650,650]
-                        lastIRValues = [1,0,0]
-                   
-                # If there is an object, it attempts to go around
-
+                    illuminate(ballTargets, ballColor, light, "search")
+                    eliminate(ballTargets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax)
+                    ballColor = None
+                    light.colorBlink(0)
 
                 else:
-                    GPIO.output(buzzerPin, 1)
-                    PWM.set_motor_model(-1500,-1500,-1500,-1500)
-                    time.sleep(0.75)
-                    PWM.set_motor_model(1500,1500,-1500,-1500)
-                    time.sleep(0.3)
-                    GPIO.output(buzzerPin, 0)
-                    None
 
-
-                if not(round(time.time() - startTime) % 3):
-                    print("Taking picture")
-                    PWM.set_motor_model(0,0,0,0)
-                    camera.save_image(filename="/home/circlekenjoyers/Freenove_4WD_Smart_Car_Kit_for_Raspberry_pi/Code/Server/image.jpg")
-                    img = cv2.imread('/home/circlekenjoyers/Freenove_4WD_Smart_Car_Kit_for_Raspberry_pi/Code/Server/image.jpg')
-                    ballFound, hue_value = detect.find_ball(img)    
-                    PWM.set_motor_model(currentPWMValue[0],currentPWMValue[1],currentPWMValue[2],currentPWMValue[3])
-                    if ballFound == True:
-
-
-                        if 121 <= hue_value <= 160:
-
-
-                            ballColor = "red"
-
-
-                        elif 90 <= hue_value <= 120:
-
-
-                            ballColor = "blue"
-                       
-                        elif 61 <= hue_value <= 89:
-
-
-                            ballColor = "green"
-                       
-                        elif 30 <= hue_value <= 60:
-
-
-                            ballColor = "yellow"
-                       
-                        else:
-
-
-                            print("Color outside Hue range, correction: required.")
-                            continue
-
-
-                        if ballColor in colorList:
-
-
-                            pass
-
-
-                        else:
-
-
-                            ledIndex = [2,3,4,8,16,32,64, 128]
-
-
-                            if ballColor == "red":
-                                for i in ledIndex:
-                                    light.ledIndex(i, 255,0,0)
-
-
-                                PWM.set_motor_model(0,0,0,0)
-                                time.sleep(5)
-                                colorList.append("red")
-
-
-                            elif ballColor == "blue":
-
-
-                                for i in ledIndex:
-                                    light.ledIndex(i,0,0,255)
-                                PWM.set_motor_model(0,0,0,0)
-                                time.sleep(5)
-                                colorList.append("blue")
-
-
-                            elif ballColor == "green":
-
-
-                                for i in ledIndex:
-                                    light.ledIndex(i,0,255,0)
-                                PWM.set_motor_model(0,0,0,0)
-                                time.sleep(5)
-                                colorList.append("green")
-
-
-                            elif ballColor == "yellow":
-
-
-                                for i in ledIndex:
-                                    light.ledIndex(i,255,255,0)
-                                PWM.set_motor_model(0,0,0,0)
-                                time.sleep(5)
-                                colorList.append("yellow")
-                           
-
-
+                    illuminate(ballTargets, ballColor, light, "search")
+                    turnLeft(PWM, 0.4)
+                    ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
+                    ballColor = transcendance(hue_value)
+                    illuminate(ballTargets, ballColor, light, "hunt")
+                    print(ballTargets)
+                                
         except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the child program destroy() will be  executed.
             print ("\nEnd of program")
         finally:
@@ -349,6 +302,3 @@ if __name__=='__main__':
             IF.close()
             light.colorBlink(0)
             ultrasonic.close()
-
-
-

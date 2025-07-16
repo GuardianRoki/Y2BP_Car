@@ -154,14 +154,17 @@ def eliminate(ballTargets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
 def illuminate(ballTargets, ballColor, light, fate):
 
     ledIndex = [2,3,4,8,16,32,64,128]
-    ledLeft = [2, 4, 16, 64]
-    ledRight = [3, 8, 32, 128]
+    ledLeft = [4,8,16,32]
+    ledRight = [2,3,64,128]
+
+    if ballColor == None:
+        light.colorBlink(0)
 
     if fate == "hunt":
 
         if ballColor == "red":
             for i in ledRight:
-                light.ledIndex(i, 255,0,0)
+                light.ledIndex(i,255,0,0)
 
         elif ballColor == "blue":
 
@@ -203,27 +206,27 @@ def illuminate(ballTargets, ballColor, light, fate):
             for i in ledLeft:
                 light.ledIndex(i,255,255,0)
             
-    elif fate == "search" or fate == "hunt":
+    # if fate == "search" or fate == "hunt":
 
-        if ballTargets[0] == "red" and ballColor == "red":
+    #     if ballTargets[0] == "red" and ballColor == "red":
 
-            for i in ledIndex:
-                light.ledIndex(i, 255, 0, 0)
+    #         for i in ledIndex:
+    #             light.ledIndex(i, 255, 0, 0)
         
-        elif ballTargets[0] == "blue" and ballColor == "blue":
+    #     elif ballTargets[0] == "blue" and ballColor == "blue":
 
-            for i in ledIndex:
-                light.ledIndex(i, 0, 0, 255)
+    #         for i in ledIndex:
+    #             light.ledIndex(i, 0, 0, 255)
         
-        elif ballTargets[0] == "green" and ballColor == "green":
+    #     elif ballTargets[0] == "green" and ballColor == "green":
 
-            for i in ledIndex:
-                light.ledIndex(i, 0, 255, 0)
+    #         for i in ledIndex:
+    #             light.ledIndex(i, 0, 255, 0)
             
-        elif ballTargets[0] == "yellow" and ballColor == "yellow":
+    #     elif ballTargets[0] == "yellow" and ballColor == "yellow":
 
-            for i in ledIndex:
-                light.ledIndex(255, 255, 0)
+    #         for i in ledIndex:
+    #             light.ledIndex(255, 255, 0)
 
 if __name__=='__main__':
     startTime = time.time()
@@ -274,13 +277,11 @@ if __name__=='__main__':
             ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
             ballColor = transcendance(hue_value)
            
-            # input("Done taking picture")
-
             while len(ballTargets):
 
                 if ballColor == ballTargets[0]:
 
-                    illuminate(ballTargets, ballColor, light, "search")
+                    illuminate(ballTargets, ballColor, light, "hunt")
                     eliminate(ballTargets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax)
                     ballColor = None
                     light.colorBlink(0)

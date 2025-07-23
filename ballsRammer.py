@@ -85,7 +85,6 @@ def eliminate(ballTargets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
     startTime = time.time()
 
     print(f"First while loop check in eliminate: {ballColor} == {ballTargets[0]}")
-    # input("Waiting for input")
     while ballColor == ballTargets[0]:
 
         infra_check = IF.read_all_infrared()
@@ -115,14 +114,11 @@ def eliminate(ballTargets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
             elif xCenter <= 230:
                
                 if 0 < yCenter <= 212:
-
                     forward(PWM, 0.7)
                     ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
                     continue  
 
                 elif yCenter <= 300:
-
-                    # input("Ramming")
                     ram(PWM)
                     ramVal = True
                     continue
@@ -145,9 +141,6 @@ def eliminate(ballTargets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
           
             if elseCounter == 3:
                 return
-            # if not(round(time.time() - startTime) % 3):
-
-            #     ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
 
         print(f"In while loop check eliminate: {ballColor} == {ballTargets[0]}")
 
@@ -156,7 +149,7 @@ def illuminate(ballTargets, ballColor, light, fate):
     ledIndex = [2,3,4,8,16,32,64,128]
     ledLeft = [4,8,16,32]
     ledRight = [2,3,64,128]
-
+    
     if ballColor == None:
         light.colorBlink(0)
 
@@ -164,7 +157,7 @@ def illuminate(ballTargets, ballColor, light, fate):
 
         if ballColor == "red":
             for i in ledRight:
-                light.ledIndex(i,255,0,0)
+                light.ledIndex(i, 255,0,0)
 
         elif ballColor == "blue":
 
@@ -206,28 +199,6 @@ def illuminate(ballTargets, ballColor, light, fate):
             for i in ledLeft:
                 light.ledIndex(i,255,255,0)
             
-    # if fate == "search" or fate == "hunt":
-
-    #     if ballTargets[0] == "red" and ballColor == "red":
-
-    #         for i in ledIndex:
-    #             light.ledIndex(i, 255, 0, 0)
-        
-    #     elif ballTargets[0] == "blue" and ballColor == "blue":
-
-    #         for i in ledIndex:
-    #             light.ledIndex(i, 0, 0, 255)
-        
-    #     elif ballTargets[0] == "green" and ballColor == "green":
-
-    #         for i in ledIndex:
-    #             light.ledIndex(i, 0, 255, 0)
-            
-    #     elif ballTargets[0] == "yellow" and ballColor == "yellow":
-
-    #         for i in ledIndex:
-    #             light.ledIndex(255, 255, 0)
-
 if __name__=='__main__':
     startTime = time.time()
     GPIO.setmode(GPIO.BCM)
@@ -252,8 +223,6 @@ if __name__=='__main__':
    
     with Ultrasonic() as ultrasonic:
 
-       # while loop that runs to constantly check for the ball, obstacles, and boundaries
-
         try:
 
             for i in range(4):
@@ -273,6 +242,7 @@ if __name__=='__main__':
             print(ballTargets)
             ballColor = None
 
+            illuminate(ballTargets, None, light, "search")
             turnRight(PWM, 1)
             ballFound, hue_value, xCenter, yCenter = picture(PWM, camera, ballTargets)
             ballColor = transcendance(hue_value)

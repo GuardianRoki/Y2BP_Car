@@ -181,7 +181,6 @@ def illuminate(targets, ballColor, light, fate, genesis, colorDict):
         elif genesis == "item":
 
             light.rainbowCycle()
-            time.sleep(5)
         
     elif fate == "search":
 
@@ -216,7 +215,7 @@ def illuminate(targets, ballColor, light, fate, genesis, colorDict):
                 light.colorBlink(0)
 
 
-def acknowledge(targets):
+def acknowledge(targets, PWM):
 
     print()
 
@@ -275,21 +274,37 @@ if __name__=='__main__':
            
             while len(targets):
 
-                if ballColor == targets[0]:
+                distance = ultrasonic.get_distance()
 
-                    illuminate(targets, ballColor, light, "hunt", "ball", colorDict)
-                    eliminate(targets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax)
-                    ballColor = None
-                    light.colorBlink(0)
+                if targets[0] in colorOptions:
 
-                else:
+                    if ballColor == targets[0]:
 
-                    illuminate(targets, ballColor, light, "search", "ball", colorDict)
-                    turnLeft(PWM, 0.4)
-                    objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
-                    ballColor = transcendance(hue_value)
-                    illuminate(targets, ballColor, light, "hunt", "ball", colorDict)
-                    print(targets)
+                        illuminate(targets, ballColor, light, "hunt", "ball", colorDict)
+                        eliminate(targets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax)
+                        ballColor = None
+                        light.colorBlink(0)
+
+                    else:
+
+                        illuminate(targets, ballColor, light, "search", "ball", colorDict)
+                        turnLeft(PWM, 0.4)
+                        objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                        ballColor = transcendance(hue_value)
+                        illuminate(targets, ballColor, light, "hunt", "ball", colorDict)
+                
+                if targets[0] in itemOptions:
+
+                    if targets[0] in objectName:
+
+                        illuminate(targets, ballColor, light, "hunt", "item", colorDict)
+                        acknowledge(targets, PWM)
+                        light.colorBlink(0)
+
+                    else:
+
+                        illuminate(targets, ballColor, light, "search", "item", colorDict)
+                        turnLeft(PWM, .4)
                                 
         except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the child program destroy() will be  executed.
             print ("\nEnd of program")

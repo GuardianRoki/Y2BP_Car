@@ -50,9 +50,9 @@ def picture(PWM,camera,targets):
     time.sleep(0.5)
     camera.save_image(filename="/home/circlekenjoyers/raspPi/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi/Code/Server/image.jpg")
     img = cv2.imread('/home/circlekenjoyers/raspPi/Freenove_4WD_Smart_Car_Kit_for_Raspberry_Pi/Code/Server/image.jpg')  
-    objectName, hue_value, xCenter, yCenter = detect.find_ball(img, targets[0])  
+    objectNames, hue_value, xCenter, yCenter = detect.find_ball(img, targets[0])  
     PWM.set_motor_model(currentPWMValue[0],currentPWMValue[1],currentPWMValue[2],currentPWMValue[3])
-    return objectName, hue_value, xCenter, yCenter
+    return objectNames, hue_value, xCenter, yCenter
 
 def transcendance(hue_value):
 
@@ -79,7 +79,7 @@ def transcendance(hue_value):
 def eliminate(targets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
 
     elseCounter = 0
-    objectName = None
+    objectNames = None
     hue_value = None
     ramVal = False
     startTime = time.time()
@@ -104,18 +104,18 @@ def eliminate(targets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
             if 1 <= xCenter <= 80:
                 print("Left quadrant.")
                 turnLeft(PWM, 0.125)
-                objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
 
             elif xCenter <= 175:
                 print("Middle left quadrant")
                 turnLeft(PWM, 0.0725)
-                objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
            
             elif xCenter <= 230:
                
                 if 0 < yCenter <= 212:
                     forward(PWM, 0.7)
-                    objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                    objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
                     continue  
 
                 elif yCenter <= 300:
@@ -126,18 +126,18 @@ def eliminate(targets, ballColor, PWM, IF, xCenter, yCenter, xMax, yMax):
             elif xCenter <= 320:
                 print("Right middle quadrant")
                 turnRight(PWM, 0.0725)
-                objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
            
             elif xCenter <= 400:
                 print("Far right quadrant")
                 turnRight(PWM, 0.125)
-                objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
            
             else:
                 elseCounter += 1
                 print("Ball not in frame")
                 turnLeft(PWM, 0.125)
-                objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
           
             if elseCounter == 3:
                 return
@@ -269,7 +269,7 @@ if __name__=='__main__':
                 illuminate(targets, ballColor, light, "search", "item", colorDict)
 
             turnRight(PWM, 1)
-            objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+            objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
             ballColor = transcendance(hue_value)
            
             while len(targets):
@@ -289,13 +289,13 @@ if __name__=='__main__':
 
                         illuminate(targets, ballColor, light, "search", "ball", colorDict)
                         turnLeft(PWM, 0.4)
-                        objectName, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                        objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
                         ballColor = transcendance(hue_value)
                         illuminate(targets, ballColor, light, "hunt", "ball", colorDict)
                 
-                if targets[0] in itemOptions:
+                elif targets[0] in itemOptions:
 
-                    if targets[0] in objectName:
+                    if targets[0] in objectNames:
 
                         illuminate(targets, ballColor, light, "hunt", "item", colorDict)
                         acknowledge(targets, PWM)
@@ -305,6 +305,8 @@ if __name__=='__main__':
 
                         illuminate(targets, ballColor, light, "search", "item", colorDict)
                         turnLeft(PWM, .4)
+                        # objectNames, hue_value, xCenter, yCenter = picture(PWM, camera, targets)
+                        # ballColor = transcendance(hue_value)
                                 
         except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the child program destroy() will be  executed.
             print ("\nEnd of program")
